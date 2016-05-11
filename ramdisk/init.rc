@@ -39,7 +39,7 @@ loglevel 6
 
 
 # Backward compatibility
-	insmod /nand.ko
+    insmod /nand.ko
     symlink /system/etc /etc
     symlink /sys/kernel/debug /d
 
@@ -106,7 +106,7 @@ loglevel 6
     write /proc/sys/kernel/randomize_va_space 2
     write /proc/sys/kernel/kptr_restrict 2
     write /proc/sys/kernel/dmesg_restrict 1
-	write  /proc/sys/vm/legacy_va_layout 1
+    write /proc/sys/vm/legacy_va_layout 1
     write /proc/sys/vm/mmap_min_addr 32768
     write /proc/sys/net/ipv4/ping_group_range "0 2147483647"
     write /proc/sys/kernel/sched_rt_runtime_us 950000
@@ -156,9 +156,9 @@ on post-fs
     mkdir /bootloader 0000 system system
     mkdir /data/HWML/ 0770 root system
     insmod /system/vendor/modules/sunxi_schw.ko
-     mount rootfs rootfs / ro remount
+    mount rootfs rootfs / ro remount
     # mount shared so changes propagate into child namespaces
-     mount rootfs rootfs / shared rec
+    mount rootfs rootfs / shared rec
     mount tmpfs tmpfs /mnt/secure private rec
 
     # We chown/chmod /cache again so because mount is run as root + defaults
@@ -232,9 +232,9 @@ on post-fs-data
     mkdir /data/misc/wifi 0770 wifi wifi
     chmod 0660 /data/misc/wifi/wpa_supplicant.conf
     chown system wifi /data/misc/wifi/wpa_supplicant.conf
-	mkdir /data/misc/wifi/sockets 0770 wifi wifi
-	mkdir /data/misc/dhcp 0770 dhcp dhcp
-	chown dhcp dhcp /data/misc/dhcp
+    mkdir /data/misc/wifi/sockets 0770 wifi wifi
+    mkdir /data/misc/dhcp 0770 dhcp dhcp
+    chown dhcp dhcp /data/misc/dhcp
     mkdir /data/local 0751 root root
 
     # star add for camera recorder
@@ -438,11 +438,17 @@ on nonencrypted
     class_start late_start
 
 on charger
-    start lights_leds
-    class_start charger
-    start console
-    setprop persist.sys.usb.config none
+    setprop sys.powerctl reboot   
 
+#no: black screen
+#trigger late-init
+
+#no: battery icon..
+#start lights_leds
+#class_start charger
+#start console
+#setprop persist.sys.usb.config none
+    
 on property:vold.decrypt=trigger_reset_main
     class_reset main
 
@@ -476,6 +482,7 @@ service ueventd /sbin/ueventd
     class core
     critical
     seclabel u:r:ueventd:s0
+    
 service healthd /sbin/healthd
     class core
     critical
@@ -727,6 +734,10 @@ service setpropserialno /system/bin/sh  /system/bin/setserialno.sh
         user root
         group root
         oneshot
+
+on property:sys.boot_from_charger_mode=1
+    class_stop charger
+    trigger late-init
 
 on property:sys.boot_completed=1
     start preinstall
