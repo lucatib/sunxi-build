@@ -1,0 +1,67 @@
+1) build kernel + modules su output dir
+build.sh
+
+2) Ramdisk (modulo nand nuovo) 
+sh repack_ramdisk ramdisk/
+
+3)Recompile Image:
+./mkbootimg --kernel Image --ramdisk new-ramdisk.cpio.gz --base 0x40000000 -o new_boot.img
+
+4) Update system/vendor/modules 
+
+5) Update libMali.so
+adb push /usr/src/tablet_astar-a33/a33_linux/output/lib/modules/3.4.39/ /system/vendor/modules
+system/lib/hw/gralloc.default.so
+system/lib/hw/gralloc.sun8i.so
+system/lib/libion.so
+system/lib/libion_alloc.so
+system/lib/libMali.so
+
+6) recovery
+recovery -> /dev/block/nandf
+(non serve)
+
+7) modifica per partire sempre in user ui al power on
+aggiunto su init.rc:
+
+on charger
+    setprop sys.powerctl reboot  
+
+# Healthd can trigger a full boot from charger mode by signaling this
+# property when the power button is held.
+on property:sys.boot_from_charger_mode=1
+    class_stop charger
+    trigger late-init
+
+
+8) logo: 
+convert -depth 16 initlogo.png rgb:initlogo.raw
+./rgb2565 < initlogo.raw > initlogo.rle
+
+
+9) System recreation:
+export PATH=$PATH:/usr/src/android/out/host/linux-x86/bin/
+simg2img system.fex system.img
+sudo mount -t ext4 -o loop system.img system
+//....
+make_ext4fs -s -l 512M -a system new_system.fex system
+
+10) System repack Linux
+export PATH=$PATH:/usr/src/tablet_a33/imgrepacker
+imgrepacker xxx.img  -> unpack
+imgrepacker xxx.dump -> repack
+
+dd if=/xxx.img of=/dev/sdc1 bs=1M
+
+
+Note: 
+//--------------------------------
+//Dump touch driver
+objdump -t gslX680new.ko | grep fw_data
+objdump -t gslX680new.ko | grep gsl_config_data
+
+//--------------------------------
+imagerepack:
+new-boot.img -> boot.fex
+new-recovery.img -> recovery.fex
+new-system.fex -> system.fex
